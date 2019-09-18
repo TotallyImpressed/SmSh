@@ -8,5 +8,6 @@ void initGPIO();
 void initTIM15(/*TIM timInst*/);
 void initTIM3();
 void initIRPT();
+void initADC1();
 
 #endif

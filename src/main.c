@@ -7,6 +7,7 @@ int main(void) {
 	initGPIO();
 	initTIM3();
 	initTIM15();
+	initADC1();
 	initIRPT();
 	__enable_irq();
 
@@ -17,5 +18,6 @@ int main(void) {
 //			TIM15->CCER ^= TIM_CCER_CC1P;
 ////			TIM15->CCER ^= TIM_CCER_CC2P;
 //		}
+
 	}
 }

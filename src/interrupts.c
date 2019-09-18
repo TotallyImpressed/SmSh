@@ -48,3 +48,9 @@ void EXTI4_IRQHandler() {
 	TIM3->CR1 &= ~TIM_CR1_CEN;
 	TIM15->CR1 &= ~TIM_CR1_CEN;
 }
+
+void ADC1_IRQHandler() {
+	/* Clear the selected ADC interrupt pending bits */
+	ADC1->SR = 0;
+	NVIC_SystemReset();
+}

@@ -6,5 +6,6 @@
 void EXTI0_IRQHandler();
 void EXTI1_IRQHandler();
 void EXTI4_IRQHandler();
+void ADC1_IRQHandler();
 
 #endif /* INTERRUPTS_H_ */

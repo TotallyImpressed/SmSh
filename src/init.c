@@ -19,7 +19,9 @@ void initComRCC() {
 	// Set HSE through PLL as a SYSCLKstm32
 	RCC->CFGR |= RCC_CFGR_SW_1; // SYSCLK is fed by PLL
 	RCC->CFGR |= RCC_CFGR_PLLSRC_PREDIV1; // PLL is fed by HSE after PREDIV
+	RCC->CFGR |= RCC_CFGR_ADCPRE_DIV8;
 
+//	RCC->CFGR |= RCC_CFGR_APB2
 	// Enable HSE and then PLL
 	RCC->CR |= RCC_CR_HSEON; // 24MHz HSE ON
 	RCC->CR |= RCC_CR_PLLON; // PLL ON
@@ -28,6 +30,8 @@ void initComRCC() {
 	RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;
 	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN; // GPIO A port
 	RCC->APB2ENR |= RCC_APB2ENR_IOPBEN; // GPIO B port
+	RCC->APB2ENR |= RCC_APB2ENR_IOPCEN; // GPIO C port
+	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN; // ADC1
 	// Deinitialization of TIM15
 	RCC->APB2RSTR |= RCC_APB2ENR_TIM15EN;
 	RCC->APB2RSTR &= ~RCC_APB2ENR_TIM15EN;
@@ -56,12 +60,12 @@ void initGPIO() {
 	GPIOA->CRL |= GPIO_CRL_CNF3_1;
 
 	GPIOA->CRL |= GPIO_CRL_MODE6; // Set PA6 pin speed to 50 MHz
-	// Set PA2 pin as AF output push-pull for TIM3
+	// Set PA6 pin as AF output push-pull for TIM3
 	GPIOA->CRL &= ~GPIO_CRL_CNF6;
 	GPIOA->CRL |= GPIO_CRL_CNF6_1;
 
 	GPIOA->CRL |= GPIO_CRL_MODE7; // Set PA7 pin speed to 50 MHz
-	// Set PA3 pin as AF output push-pull for TIM3
+	// Set PA7 pin as AF output push-pull for TIM3
 	GPIOA->CRL &= ~GPIO_CRL_CNF7;
 	GPIOA->CRL |= GPIO_CRL_CNF7_1;
 
@@ -80,6 +84,16 @@ void initGPIO() {
 	// Set PB4 pin to input with pull-up/pull-down
 	GPIOB->CRL &= ~GPIO_CRL_CNF4;
 	GPIOB->CRL |= GPIO_CRL_CNF4_1;
+
+//Port C
+	GPIOC->CRL &= ~GPIO_CRL_MODE0; // Set PC0 pin as input for ADC
+	// Set PC0 pin to analog input
+	GPIOC->CRL &= ~GPIO_CRL_CNF0;
+//	GPIOC->CRL |= GPIO_CRL_CNF0;
+
+	GPIOC->CRH &= ~GPIO_CRH_MODE9; // Set PC9 pin as output
+	GPIOC->CRH |= GPIO_CRH_MODE9_1; // Output speed - 2MHz
+	GPIOC->CRH &= ~GPIO_CRH_CNF9;	// General purpose push-pull
 
 // EXTI0 line is fed by PA
 	AFIO->EXTICR[0] |= AFIO_EXTICR1_EXTI0_PA;
@@ -179,7 +193,34 @@ void initTIM15() {
 	TIM15->CCMR1 |= TIM_CCMR1_OC2PE; // Enable preload register
 }
 
+void initADC1() {
+
+	ADC1->SMPR1 = ADC_SMPR1_SMP10;
+
+	ADC1->CR1 |= ADC_CR1_AWDCH_1 | ADC_CR1_AWDCH_3;
+	ADC1->CR1 |= ADC_CR1_AWDEN;
+	ADC1->CR1 |= ADC_CR1_AWDIE;
+
+	// Set thresholds values for watchdog
+	ADC1->HTR = 2200; // Current - ADC samples ratio = ~ 1.78
+	ADC1->LTR = 0;
+
+	ADC1->CR2 |= ADC_CR2_ADON;
+	// Calibration
+	ADC1->CR2 |= ADC_CR2_CAL;
+	while(ADC1->CR2 & ADC_CR2_CAL) {
+		__NOP; // waiting for end of calibration
+	}
+
+	ADC1->SQR3 = 10;
+	// Start conversion
+	ADC1->CR2 |= ADC_CR2_EXTSEL | ADC_CR2_EXTTRIG | ADC_CR2_CONT;
+	ADC1->CR2 |= ADC_CR2_SWSTART;
+}
+
 void initIRPT() {
+	// Enable NVIC interrupt for ADC1
+	NVIC_EnableIRQ(ADC1_IRQn);
 	// Enable NVIC interrupt for EXTI0
 	NVIC_EnableIRQ(EXTI0_IRQn);
 	EXTI->IMR |= EXTI_IMR_MR0;
